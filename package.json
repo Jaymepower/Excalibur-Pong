@@ -1,0 +1,19 @@
+{
+  "name": "pong",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "source": "index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "excalibur": "^0.29.3"
+  },
+  "devDependencies": {
+    "parcel": "^2.12.0"
+  }
+}
