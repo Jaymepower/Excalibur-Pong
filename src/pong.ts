@@ -2,17 +2,45 @@ import { Actor, CollisionType, Color, Engine, Font, Text, vec } from 'excalibur'
 
 function pong() {
 
+
     const game = new Engine({
-        width: 800,
+        width: 1000,
         height: 600,
         backgroundColor: Color.Black
     })
 
-    
+
     drawCenterLine(game)
-    drawScoreLabels(game)
 
+    // Score Cards
+    const scoreText1 = new Text({
+        text: "0",
+        font: new Font({ size: 40 }),
+        color: Color.White
+    })
 
+    const score1 = new Actor({
+        x: game.drawWidth / 4,
+        y: 50
+    })
+
+    const scoreText2 = new Text({
+        text: "0",
+        font: new Font({ size: 40 }),
+        color: Color.White
+    })
+
+    const score2 = new Actor({
+        x: (game.drawWidth / 4) * 3,
+        y: 50
+    })
+
+    score1.graphics.use(scoreText1);
+    score2.graphics.use(scoreText2);
+    game.add(score1);
+    game.add(score2);
+
+    // Players
     const player1 = new Actor({
         x: 40,
         y: game.drawHeight / 2,
@@ -32,13 +60,15 @@ function pong() {
 
     player1.body.collisionType = CollisionType.Fixed;
 
-    game.add(player1)
-    game.add(player2)
-
+    game.add(player1);
+    game.add(player2);
+ 
     game.input.pointers.primary.on("move", (evt) => {
         player1.pos.y = evt.worldPos.y;
+        
     });
 
+    // Ball
     const ball = new Actor({
         x: game.drawWidth / 2 + 10,
         y: game.drawHeight / 2 + 10,
@@ -47,7 +77,7 @@ function pong() {
         color: Color.White,
     })
 
-    player2.vel = vec(0, 80)
+    player2.vel = vec(0, 100)
 
     player2.on("postupdate", () => {
 
@@ -61,10 +91,14 @@ function pong() {
 
     })
 
-    const speed = vec(200, 200)
-
+    const speed = vec(250, 250)
+    let ballMoving = false;
     game.input.pointers.primary.on("down", () => {
-        ball.vel = speed;
+        if(!ballMoving) {
+            ball.vel = speed;
+            player2.vel = vec(0, 80)
+            ballMoving = true;
+        }
     })
 
 
@@ -82,7 +116,6 @@ function pong() {
     });
 
     ball.on("collisionstart", (event) => {
-
         var intersection = event.contact.mtv.normalize()
         console.log(intersection);
 
@@ -94,52 +127,42 @@ function pong() {
 
     });
 
+    ball.on("exitviewport", (event) => {
+        if(ball.pos.x + ball.width > game.drawWidth) {
+            scoreText1.text = (Number(scoreText1.text) + 1).toString();
+        }
+
+        if(ball.pos.x + ball.width < game.drawWidth) {
+            scoreText2.text = (Number(scoreText2.text) + 1).toString();
+        }
+
+        player1.pos.y = game.drawHeight / 2;
+        player2.pos.y = game.drawHeight / 2;
+        player2.vel = vec(0, 0);
+        ball.pos.x = game.drawWidth / 2 + 10;
+        ball.pos.y = game.drawHeight / 2;
+        ball.vel = vec(0,0);
+        ballMoving = false; 
+    })
+
     game.add(ball)
     game.start()
 }
 
-function drawScoreLabels(game : Engine) {
 
-    const scoreText1 = new Text({
-        text: "00",
-        font: new Font({ size: 40 }),
-        color: Color.White
-    })
 
-    this.score1  = new Actor({
-        x: game.drawWidth / 4,
-        y: 50
-    })
-
-    const scoreText2 =  new Text({
-        text: "00",
-        font: new Font({ size: 40 }),
-        color: Color.White
-    })
-
-    this.score2 = new Actor({
-        x: (game.drawWidth / 4) * 3,
-        y: 50
-    })
-
-    this.score1.graphics.use(scoreText1);
-    this.score2.graphics.use(scoreText2);
-    game.add(this.score1);
-    game.add(this.score2);
-}
-
-function drawCenterLine(game : Engine) {
+function drawCenterLine(game: Engine) {
 
     var currentHieght = 0
     const padding = 10;
 
-    while(currentHieght < game.drawHeight - 30)  {
-        const xPos = game.drawWidth / 2; 
+    while (currentHieght < game.drawHeight - 30) {
+        const xPos = game.drawWidth / 2;
 
         const line = new Actor({
-            height : 10,
-            width : 10,
-            x : xPos,
+            height: 10,
+            width: 10,
+            x: xPos,
             y: padding + currentHieght + 20,
             color: Color.White
         })
