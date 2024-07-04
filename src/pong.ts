@@ -1,12 +1,13 @@
-import { Actor, CollisionType, Color, Engine, Font, Text, vec } from 'excalibur'
+import { Actor, CollisionType, Color, DisplayMode, Engine, Font, Text, vec } from 'excalibur'
 
 function pong() {
 
 
     const game = new Engine({
-        width: 1000,
+        width: 1200,
         height: 600,
-        backgroundColor: Color.Black
+        backgroundColor: Color.Black,
+        displayMode: DisplayMode.Fixed
     })
 
 
@@ -76,30 +77,22 @@ function pong() {
         height: 10,
         color: Color.White,
     })
-
-    player2.vel = vec(0, 100)
-
-    player2.on("postupdate", () => {
-
-        if (player2.pos.y > game.drawHeight * 0.9) {
-            player2.vel.y *= -1
-        }
-
-        if (player2.pos.y < game.drawHeight * 0.1) {
-            player2.vel.y *= -1
-        }
-
-    })
-
+    
     const speed = vec(250, 250)
     let ballMoving = false;
     game.input.pointers.primary.on("down", () => {
         if(!ballMoving) {
             ball.vel = speed;
-            player2.vel = vec(0, 80)
             ballMoving = true;
+            player2.actions.repeatForever(followBall => {
+                if(player2.pos.y !== ball.pos.y) {
+                    followBall.moveTo(vec(player2.pos.x, ball.pos.y), 300)
+                }
+    
+            })
         }
     })
+
 
 
     ball.body.collisionType = CollisionType.Passive
@@ -113,6 +106,7 @@ function pong() {
         if (ball.pos.y < ball.height / 3) {
             ball.vel.y = speed.y;
         }
+
     });
 
     ball.on("collisionstart", (event) => {
