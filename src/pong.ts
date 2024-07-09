@@ -1,6 +1,10 @@
-import { Actor, CollisionType, Color, DisplayMode, Engine, Font, Text, vec } from 'excalibur'
+import { Actor, CollisionType, Color, DisplayMode, Engine, Font, Loader, Sound, Text, vec } from 'excalibur'
+import pongSound from './res/pong_sound.mp3'
 
-function pong() {
+async function pong() {
+
+    const sound = new Sound(pongSound)
+    const loader = new Loader([sound])
 
 
     const game = new Engine({
@@ -9,7 +13,6 @@ function pong() {
         backgroundColor: Color.Black,
         displayMode: DisplayMode.Fixed
     })
-
 
     drawCenterLine(game)
 
@@ -66,7 +69,6 @@ function pong() {
  
     game.input.pointers.primary.on("move", (evt) => {
         player1.pos.y = evt.worldPos.y;
-        
     });
 
     // Ball
@@ -77,7 +79,7 @@ function pong() {
         height: 10,
         color: Color.White,
     })
-    
+
     const speed = vec(250, 250)
     let ballMoving = false;
     game.input.pointers.primary.on("down", () => {
@@ -85,10 +87,9 @@ function pong() {
             ball.vel = speed;
             ballMoving = true;
             player2.actions.repeatForever(followBall => {
-                if(player2.pos.y !== ball.pos.y) {
+                if(player2.pos.y !== ball.pos.y && ball.pos.x > game.drawWidth / 2) {
                     followBall.moveTo(vec(player2.pos.x, ball.pos.y), 300)
                 }
-    
             })
         }
     })
@@ -101,10 +102,12 @@ function pong() {
 
         if (ball.pos.y + ball.height / 3 > game.drawHeight) {
             ball.vel.y = speed.y * -1;
+            sound.play(0.5);
         }
 
         if (ball.pos.y < ball.height / 3) {
             ball.vel.y = speed.y;
+            sound.play(0.5);
         }
 
     });
@@ -118,7 +121,7 @@ function pong() {
         } else {
             ball.vel.y *= -1
         }
-
+        sound.play(0.5);
     });
 
     ball.on("exitviewport", (event) => {
@@ -139,8 +142,8 @@ function pong() {
         ballMoving = false; 
     })
 
-    game.add(ball)
-    game.start()
+    game.add(ball);
+    await game.start(loader);
 }
 
 
