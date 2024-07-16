@@ -1,13 +1,13 @@
-import { Actor, CollisionType, Color, DefaultLoader, Engine, Font, Loader, Scene, Sound, Text, vec, Vector } from "excalibur";
-import pongSound from './res/pong_sound.mp3'
+import { Actor, CollisionType, Color, Engine, Font, Scene, Sound, Text, vec, Vector } from "excalibur";
+import { sounds } from "./resources";
 
 export default class PongScene extends Scene {
-
-    private player1!: Actor;
-    private player2!: Actor;
+    private player!: Actor;
+    private opponent!: Actor;
     private ball!: Actor;
 
-    private sound!: Sound;
+    private playerScore!: Text;
+    private opponentScore!: Text;
 
     private ballMoving = false;
 
@@ -27,25 +27,17 @@ export default class PongScene extends Scene {
             if (!this.ballMoving) {
                 this.ball.vel = PongScene.speed;
                 this.ballMoving = true;
-                this.player2.actions.repeatForever(followBall => {
-                    if (this.player2.pos.y !== this.ball.pos.y && this.ball.pos.x > engine.drawWidth / 2) {
-                        followBall.moveTo(vec(this.player2.pos.x, this.ball.pos.y), 300)
+                this.opponent.actions.repeatForever(followBall => {
+                    if (this.opponent.pos.y !== this.ball.pos.y && this.ball.pos.x > engine.drawWidth / 2) {
+                        followBall.moveTo(vec(this.opponent.pos.x, this.ball.pos.y), 300)
                     }
                 })
             }
         })
-
-        engine.start();
-    }
-
-    // @TODO fix sound pre loading
-    public onPreLoad(loader: DefaultLoader): void {
-        this.sound = new Sound(pongSound);
-        loader.addResource(this.sound);
     }
 
     private setupPlayers(engine: Engine) {
-        this.player1 = new Actor({
+        this.player = new Actor({
             x: 40,
             y: engine.drawHeight / 2,
             height: 80,
@@ -53,14 +45,17 @@ export default class PongScene extends Scene {
             color: Color.White
         });
 
-        this.player1.body.collisionType = CollisionType.Fixed;
+        this.player.body.collisionType = CollisionType.Fixed;
 
         // Handle player 1 movement 
         engine.input.pointers.primary.on("move", (evt) => {
-            this.player1.pos.y = evt.worldPos.y;
+            // Prevent the paddle from running off the page
+            if(evt.worldPos.y > engine.drawHeight * 0.1 && evt.worldPos.y < engine.drawHeight * 0.90) {
+                this.player.pos.y = evt.worldPos.y;
+            }
         });
 
-        this.player2 = new Actor({
+        this.opponent = new Actor({
             x: engine.drawWidth - 40,
             y: engine.drawHeight / 2,
             height: 80,
@@ -68,13 +63,13 @@ export default class PongScene extends Scene {
             color: Color.White
         });
 
-        engine.add(this.player1);
-        engine.add(this.player2);
+        engine.add(this.player);
+        engine.add(this.opponent);
     }
 
     private setupBall(engine: Engine) {
-        const player1 = this.player1;
-        const player2 = this.player2;
+        const player1 = this.player;
+        const player2 = this.opponent;
 
         this.ball = new Actor({
             x: engine.drawWidth / 2 + 10,
@@ -90,36 +85,35 @@ export default class PongScene extends Scene {
 
             if (this.ball.pos.y + this.ball.height / 3 > engine.drawHeight) {
                 this.ball.vel.y = PongScene.speed.y * -1;
-                //sound.play(0.5);
+                sounds.pong.play()
             }
 
             if (this.ball.pos.y < this.ball.height / 3) {
                 this.ball.vel.y = PongScene.speed.y;
-                //sound.play(0.5);
+                sounds.pong.play()
             }
 
         });
 
         this.ball.on("collisionstart", (event) => {
             var intersection = event.contact.mtv.normalize()
-            console.log(intersection);
 
             if (Math.abs(intersection.x) > Math.abs(intersection.y)) {
                 this.ball.vel.x *= -1
             } else {
                 this.ball.vel.y *= -1
             }
-            //sound.play(0.5);
+            sounds.pong.play()
         });
 
         // @TODO Add handler for score updates
-        this.ball.on("exitviewport", (event) => {
+        this.ball.on("exitviewport", () => {
             if (this.ball.pos.x + this.ball.width > engine.drawWidth) {
-                //scoreText1.text = (Number(scoreText1.text) + 1).toString();
+                this.addScore(this.playerScore);
             }
 
             if (this.ball.pos.x + this.ball.width < engine.drawWidth) {
-                //scoreText2.text = (Number(scoreText2.text) + 1).toString();
+                this.addScore(this.opponentScore);
             }
 
             player1.pos.y = engine.drawHeight / 2;
@@ -134,10 +128,14 @@ export default class PongScene extends Scene {
         engine.add(this.ball);
     }
 
+    private addScore(scoreCard : Text) {
+        scoreCard.text = (Number(scoreCard.text) + 1).toString();
+    }
+
 
     private addScoreCards(engine: Engine) {
         // Score Cards
-        const scoreText1 = new Text({
+        this.playerScore = new Text({
             text: "0",
             font: new Font({ size: 40 }),
             color: Color.White
@@ -148,7 +146,7 @@ export default class PongScene extends Scene {
             y: 50
         })
 
-        const scoreText2 = new Text({
+        this.opponentScore = new Text({
             text: "0",
             font: new Font({ size: 40 }),
             color: Color.White
@@ -159,15 +157,14 @@ export default class PongScene extends Scene {
             y: 50
         })
 
-        score1.graphics.use(scoreText1);
-        score2.graphics.use(scoreText2);
+        score1.graphics.use(this.playerScore);
+        score2.graphics.use(this.opponentScore);
 
         engine.add(score1);
         engine.add(score2);
     }
 
     private drawCenterLine(engine: Engine) {
-
         var currentHieght = 0
         const padding = 10;
 
